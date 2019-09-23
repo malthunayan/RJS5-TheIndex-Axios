@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-
-import authors from "./data.js";
+import axios from "axios";
 
 // Components
 import Sidebar from "./Sidebar";
@@ -10,16 +9,33 @@ import AuthorDetail from "./AuthorDetail";
 class App extends Component {
   state = {
     currentAuthor: null,
-    filteredAuthors: authors
+    authors: [],
+    filteredAuthors: [],
+    loading: true
   };
 
-  selectAuthor = author => this.setState({ currentAuthor: author });
+  selectAuthor = async author => {
+    this.setState({ loading: true });
+    let url =
+      "https://the-index-api.herokuapp.com/api/authors/" + author.id + "/";
+    try {
+      var response = await axios.get(url);
+      const newAuthor = response.data;
+      this.setState({
+        currentAuthor: newAuthor,
+        loading: false
+      });
+    } catch (error) {
+      console.error("SOMETHING WENT HORRIBLY WRONG");
+      console.error(error);
+    }
+  };
 
   unselectAuthor = () => this.setState({ currentAuthor: null });
 
   filterAuthors = query => {
     query = query.toLowerCase();
-    let filteredAuthors = authors.filter(author => {
+    let filteredAuthors = this.state.authors.filter(author => {
       return `${author.first_name} ${author.last_name}`
         .toLowerCase()
         .includes(query);
@@ -30,6 +46,12 @@ class App extends Component {
   getContentView = () => {
     if (this.state.currentAuthor) {
       return <AuthorDetail author={this.state.currentAuthor} />;
+    } else if (this.state.loading) {
+      return (
+        <>
+          <h1>Loading</h1>
+        </>
+      );
     } else {
       return (
         <AuthorsList
@@ -40,6 +62,23 @@ class App extends Component {
       );
     }
   };
+
+  async componentDidMount() {
+    try {
+      var response = await axios.get(
+        "https://the-index-api.herokuapp.com/api/authors/"
+      );
+      const newAuthors = response.data;
+      this.setState({
+        authors: newAuthors,
+        filteredAuthors: newAuthors,
+        loading: false
+      });
+    } catch (error) {
+      console.error("SOMETHING WENT HORRIBLY WRONG");
+      console.error(error);
+    }
+  }
 
   render() {
     return (
